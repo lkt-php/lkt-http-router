@@ -12,6 +12,13 @@ class Router
     /** @var AbstractRoute[] */
     protected static array $routes = [];
 
+    protected static $loggedUserChecker = null;
+
+    public static function setLoggedUserChecker(callable $checker): void
+    {
+        static::$loggedUserChecker = $checker;
+    }
+
     public static function addRoute(AbstractRoute $route, string $router = 'default'): void
     {
         if (!isset(static::$routes[$router])) {
@@ -26,7 +33,10 @@ class Router
         $routes = static::$routes[$router];
         $dispatcher = simpleDispatcher(function(RouteCollector $r) use ($routes) {
             foreach ($routes as $route) {
-                $r->addRoute($route->getMethod(), $route->getRoute(), $route->getHandler());
+                $r->addRoute($route->getMethod(), $route->getRoute(), [
+                    'handler' => $route->getHandler(),
+                    'onlyLoggedUsers' => $route->isOnlyForLoggedUsers(),
+                ]);
             }
         });
 
@@ -51,8 +61,18 @@ class Router
                 return Response::methodNotAllowed();
                 break;
             case Dispatcher::FOUND:
-                $handler = $routeInfo[1];
+                $config = $routeInfo[1];
+                $isOnlyForLoggedUsers = $config['onlyLoggedUsers'];
                 $vars = [...$routeInfo[2], ...static::getRequestVars()];
+
+                if ($isOnlyForLoggedUsers && static::$loggedUserChecker !== null) {
+                    $userIsLogged = call_user_func(static::$loggedUserChecker, $vars);
+
+                    if ($userIsLogged !== true) {
+                        return Response::forbidden();
+                    }
+                }
+                $handler = $config['handler'];
 
                 $response = call_user_func($handler, $vars);
                 if ($response instanceof Response) {

@@ -10,6 +10,7 @@ abstract class AbstractRoute
 
     protected string $route = '';
     protected $handler = null;
+    protected bool $onlyLoggedUser = false;
 
     public function __construct(string $route, callable $handler)
     {
@@ -32,9 +33,28 @@ abstract class AbstractRoute
         return $this->handler;
     }
 
+    public function setOnlyLoggedUsers(bool $status = true): static
+    {
+        $this->onlyLoggedUser = $status;
+        return $this;
+    }
+
+    public function isOnlyForLoggedUsers(): bool
+    {
+        return $this->onlyLoggedUser;
+    }
+
     public static function register(string $route, callable $handler): static
     {
         $r = new static($route, $handler);
+        Router::addRoute($r);
+        return $r;
+    }
+
+    public static function onlyLoggedUsers(string $route, callable $handler): static
+    {
+        $r = new static($route, $handler);
+        $r->setOnlyLoggedUsers();
         Router::addRoute($r);
         return $r;
     }
