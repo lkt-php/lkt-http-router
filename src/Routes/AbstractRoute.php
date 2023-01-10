@@ -10,6 +10,8 @@ abstract class AbstractRoute
 
     protected string $route = '';
     protected $handler = null;
+    protected array $accessCheckers = [];
+
     protected bool $onlyLoggedUser = false;
 
     public function __construct(string $route, callable $handler)
@@ -42,6 +44,17 @@ abstract class AbstractRoute
     public function isOnlyForLoggedUsers(): bool
     {
         return $this->onlyLoggedUser;
+    }
+
+    public function setAccessCheckers(array $names): static
+    {
+        $this->accessCheckers = $names;
+        return $this;
+    }
+
+    public function getAccessCheckers(): array
+    {
+        return $this->accessCheckers;
     }
 
     public static function register(string $route, callable $handler): static

@@ -12,11 +12,18 @@ class Router
     /** @var AbstractRoute[] */
     protected static array $routes = [];
 
+    protected static array $accessCheckers = [];
+
     protected static $loggedUserChecker = null;
 
     public static function setLoggedUserChecker(callable $checker): void
     {
         static::$loggedUserChecker = $checker;
+    }
+
+    public static function setAccessChecker(string $name, callable $checker): void
+    {
+        static::$accessCheckers[$name] = $checker;
     }
 
     public static function addRoute(AbstractRoute $route, string $router = 'default'): void
@@ -36,6 +43,7 @@ class Router
                 $r->addRoute($route->getMethod(), $route->getRoute(), [
                     'handler' => $route->getHandler(),
                     'onlyLoggedUsers' => $route->isOnlyForLoggedUsers(),
+                    'accessCheckers' => $route->getAccessCheckers(),
                 ]);
             }
         });
@@ -63,8 +71,10 @@ class Router
             case Dispatcher::FOUND:
                 $config = $routeInfo[1];
                 $isOnlyForLoggedUsers = $config['onlyLoggedUsers'];
+                $accessCheckers = $config['accessCheckers'];
                 $vars = [...$routeInfo[2], ...static::getRequestVars()];
 
+                // Check if logged is user
                 if ($isOnlyForLoggedUsers && static::$loggedUserChecker !== null) {
                     $userIsLogged = call_user_func(static::$loggedUserChecker, $vars);
 
@@ -72,6 +82,18 @@ class Router
                         return Response::forbidden();
                     }
                 }
+
+                // Check custom access checkers
+                if (count($accessCheckers) > 0) {
+                    foreach ($accessCheckers as $accessChecker) {
+                        $checked = static::runAccessChecker($accessChecker, $vars);
+                        if ($checked instanceof Response) {
+                            return $checked;
+                        }
+                    }
+                }
+
+                // Handle response
                 $handler = $config['handler'];
 
                 $response = call_user_func($handler, $vars);
@@ -82,6 +104,24 @@ class Router
         }
 
         return Response::forbidden();
+    }
+
+    private static function runAccessChecker(string $name, array $vars = []): ?Response
+    {
+        if (!isset(static::$accessCheckers[$name])) {
+            return null;
+        }
+        $result = call_user_func(static::$accessCheckers[$name], $vars);
+
+        if ($result instanceof Response) {
+            return $result;
+        }
+
+        if ($result === false) {
+            return Response::forbidden();
+        }
+
+        return null;
     }
 
     private static function getRequestVars(): array
