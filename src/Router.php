@@ -49,7 +49,9 @@ class Router
             foreach ($routes as $route) {
                 $r->addRoute($route->getMethod(), $route->getRoute(), [
                     'handler' => $route->getHandler(),
+                    'loggedUserChecker' => $route->getLoggedUserChecker(),
                     'onlyLoggedUsers' => $route->isOnlyForLoggedUsers(),
+                    'onlyNotLoggedUsers' => $route->isOnlyForNotLoggedUsers(),
                     'accessCheckers' => $route->getAccessCheckers(),
                 ]);
             }
@@ -77,16 +79,26 @@ class Router
                 break;
             case Dispatcher::FOUND:
                 $config = $routeInfo[1];
+                $loggedUserChecker = $config['loggedUserChecker'];
                 $isOnlyForLoggedUsers = $config['onlyLoggedUsers'];
+                $isOnlyNotForLoggedUsers = $config['onlyNotLoggedUsers'];
                 $accessCheckers = $config['accessCheckers'];
                 $vars = [...$routeInfo[2], ...static::getRequestVars()];
 
-                // Check if logged is user
-                if ($isOnlyForLoggedUsers && static::$loggedUserChecker !== null) {
-                    $userIsLogged = call_user_func(static::$loggedUserChecker, $vars);
+                if (!is_callable($loggedUserChecker) && is_callable(static::$loggedUserChecker)) {
+                    $loggedUserChecker = static::$loggedUserChecker;
+                }
 
-                    if ($userIsLogged !== true) {
+                // Check if logged is user
+                if (($isOnlyForLoggedUsers || $isOnlyNotForLoggedUsers) && is_callable($loggedUserChecker)) {
+                    $userIsLogged = call_user_func($loggedUserChecker, $vars);
+
+                    if ($isOnlyForLoggedUsers && $userIsLogged !== true) {
                         return Response::forbidden();
+                    }
+
+                    if ($isOnlyNotForLoggedUsers && $userIsLogged === true) {
+                        return Response::notFound();
                     }
                 }
 

@@ -13,6 +13,9 @@ abstract class AbstractRoute
     protected array $accessCheckers = [];
 
     protected bool $onlyLoggedUser = false;
+    protected bool $onlyNotLoggedUser = false;
+
+    protected $loggedUserChecker = null;
 
     public function __construct(string $route, callable $handler)
     {
@@ -41,9 +44,31 @@ abstract class AbstractRoute
         return $this;
     }
 
+    public function setOnlyNotLoggedUsers(bool $status = true): static
+    {
+        $this->onlyNotLoggedUser = $status;
+        return $this;
+    }
+
+    public function setLoggedUserChecker(callable $handler): static
+    {
+        $this->loggedUserChecker = $handler;
+        return $this;
+    }
+
+    public function getLoggedUserChecker(): ?callable
+    {
+        return $this->loggedUserChecker;
+    }
+
     public function isOnlyForLoggedUsers(): bool
     {
         return $this->onlyLoggedUser;
+    }
+
+    public function isOnlyForNotLoggedUsers(): bool
+    {
+        return $this->onlyNotLoggedUser;
     }
 
     public function setAccessCheckers(array $names): static
@@ -68,6 +93,14 @@ abstract class AbstractRoute
     {
         $r = new static($route, $handler);
         $r->setOnlyLoggedUsers();
+        Router::addRoute($r);
+        return $r;
+    }
+
+    public static function onlyNotLoggedUsers(string $route, callable $handler): static
+    {
+        $r = new static($route, $handler);
+        $r->setOnlyNotLoggedUsers();
         Router::addRoute($r);
         return $r;
     }
