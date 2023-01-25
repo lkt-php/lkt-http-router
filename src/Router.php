@@ -242,4 +242,12 @@ class Router
         }
         return null;
     }
+
+    public static function getTokenHeader(): ?string
+    {
+        if (isset($_SERVER['HTTP_TOKEN'])) {
+            return trim($_SERVER['HTTP_TOKEN']);
+        }
+        return null;
+    }
 }
