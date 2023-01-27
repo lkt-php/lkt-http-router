@@ -12,18 +12,13 @@ class Router
     /** @var AbstractRoute[] */
     protected static array $routes = [];
 
-    protected static array $accessCheckers = [];
-
     protected static $loggedUserChecker = null;
+
+    protected static Response|null $forceResponse = null;
 
     public static function setLoggedUserChecker(callable $checker): void
     {
         static::$loggedUserChecker = $checker;
-    }
-
-    public static function setAccessChecker(string $name, callable $checker): void
-    {
-        static::$accessCheckers[$name] = $checker;
     }
 
     public static function addRoute(AbstractRoute $route, string $router = 'default'): void
@@ -31,18 +26,28 @@ class Router
         if (!isset(static::$routes[$router])) {
             static::$routes[$router] = [];
         }
-        static::$routes[$router][] = $route;
+        static::$routes[$router][$route->getRouterIndex()] = $route;
     }
 
-    public static function dispatch(string $router = 'default'): void
+    public static function forceGlobalResponse(Response $response): void
     {
-        $response = static::getResponse($router);
+        static::$forceResponse = $response;
+    }
+
+    public static function dispatch(): void
+    {
+        $response = static::getResponse();
         $response->sendHeaders()->sendContent();
         die();
     }
 
-    public static function getResponse(string $router = 'default'): Response
+    public static function getResponse(): Response
     {
+        $router = 'default';
+        if (static::$forceResponse instanceof Response) {
+            return static::$forceResponse;
+        }
+
         /** @var AbstractRoute[] $routes */
         $routes = static::$routes[$router];
         $dispatcher = simpleDispatcher(function (RouteCollector $r) use ($routes) {
@@ -125,12 +130,9 @@ class Router
         return Response::forbidden();
     }
 
-    private static function runAccessChecker(string $name, array $vars = []): ?Response
+    private static function runAccessChecker(callable $checker, array $vars = []): ?Response
     {
-        if (!isset(static::$accessCheckers[$name])) {
-            return null;
-        }
-        $result = call_user_func(static::$accessCheckers[$name], $vars);
+        $result = call_user_func($checker, $vars);
 
         if ($result instanceof Response) {
             return $result;

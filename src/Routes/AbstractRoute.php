@@ -33,6 +33,11 @@ abstract class AbstractRoute
         return $this->route;
     }
 
+    public function getRouterIndex(): string
+    {
+        return implode('_', [$this->getMethod(), $this->getRoute()]);
+    }
+
     public function getHandler(): callable
     {
         return $this->handler;
@@ -71,9 +76,9 @@ abstract class AbstractRoute
         return $this->onlyNotLoggedUser;
     }
 
-    public function setAccessCheckers(array $names): static
+    public function addAccessChecker(callable $checker): static
     {
-        $this->accessCheckers = $names;
+        $this->accessCheckers[] = $checker;
         return $this;
     }
 
