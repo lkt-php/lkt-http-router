@@ -3,6 +3,7 @@
 namespace Lkt\Http\Routes;
 
 use Lkt\Http\Router;
+use Lkt\Http\SiteMap\SiteMapConfig;
 
 abstract class AbstractRoute
 {
@@ -16,6 +17,8 @@ abstract class AbstractRoute
     protected bool $onlyNotLoggedUser = false;
 
     protected $loggedUserChecker = null;
+
+    protected SiteMapConfig|null $siteMap = null;
 
     public function __construct(string $route, callable $handler)
     {
@@ -85,6 +88,22 @@ abstract class AbstractRoute
     public function getAccessCheckers(): array
     {
         return $this->accessCheckers;
+    }
+
+    public function addToSiteMap(string $changeFrequency = SiteMapConfig::CHANGE_FREQUENCY_NEVER, float $priority = 0.0): static
+    {
+        $this->siteMap = new SiteMapConfig($this->route, $changeFrequency, $priority);
+        return $this;
+    }
+
+    public function hasSiteMapConfig(): bool
+    {
+        return is_object($this->siteMap);
+    }
+
+    public function getSiteMapConfig(): SiteMapConfig
+    {
+        return $this->siteMap;
     }
 
     public static function register(string $route, callable $handler): static
