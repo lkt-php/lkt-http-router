@@ -30,10 +30,19 @@ class SiteMapConfig
         $this->dynamicHandler = $dynamicHandler;
     }
 
+    public function getLocation(): string
+    {
+        $base = Networking::getPublicUrl();
+        $path = $this->location;
+        if (str_ends_with($base, '/') && str_starts_with($path, '/')) {
+            $path = substr($path, 1);
+        }
+        return "{$base}{$path}";
+    }
+
     public function __toString(): string
     {
-        $location = Networking::getInstance()->getPublicUrl() . $this->location;
-        $r = ["<loc>{$location}</loc>"];
+        $r = ["<loc>{$this->getLocation()}</loc>"];
         if ($this->priority !== null) $r[] = "<priority>{$this->priority}</priority>";
         if ($this->changeFrequency !== null) $r[] = "<changefreq>{$this->changeFrequency}</changefreq>";
 

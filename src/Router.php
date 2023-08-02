@@ -6,6 +6,7 @@ use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
 use Lkt\Http\Networking\Networking;
 use Lkt\Http\Routes\AbstractRoute;
+use Lkt\Http\Routes\GetRoute;
 use function FastRoute\simpleDispatcher;
 
 class Router
@@ -39,6 +40,17 @@ class Router
             static::$routes[$router] = [];
         }
         return static::$routes[$router];
+    }
+
+    /**
+     * @param string $router
+     * @return AbstractRoute[]
+     */
+    public static function getGETRoutes(string $router = 'default'): array
+    {
+        return array_filter(static::getRoutes($router), function ($route) {
+            return $route instanceof GetRoute;
+        });
     }
 
     public static function forceGlobalResponse(Response $response): void
@@ -135,7 +147,7 @@ class Router
 
     public static function getRequestVars(): array
     {
-        $requestMethod = Networking::getInstance()->getRequestMethod();
+        $requestMethod = Networking::getRequestMethod();
         $params = [];
 
         // Merge variables
@@ -143,17 +155,13 @@ class Router
         switch ($requestMethod) {
             case 'get':
                 if (count($_REQUEST) > 0) {
-                    foreach ($_REQUEST as $key => $val) {
-                        $params[$key] = $val;
-                    }
+                    foreach ($_REQUEST as $key => $val) $params[$key] = $val;
                 }
                 break;
 
             case 'post':
                 if (count($_REQUEST) > 0) {
-                    foreach ($_REQUEST as $key => $val) {
-                        $params[$key] = $val;
-                    }
+                    foreach ($_REQUEST as $key => $val) $params[$key] = $val;
                 }
                 $content = file_get_contents('php://input');
                 if (strlen($content) > 0) {

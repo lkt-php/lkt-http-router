@@ -50,55 +50,55 @@ final class Networking
         $this->requestMethod = strtolower($_SERVER['REQUEST_METHOD']);
     }
 
-    public static function getInstance(): self
+    private static function getInstance(): self
     {
         if (!self::$instance instanceof self) self::$instance = new self();
         return self::$instance;
     }
 
-    public function getRemoteAddress(): string
+    public static function getRemoteAddress(): string
     {
-        return $this->remoteAddress;
+        return self::getInstance()->remoteAddress;
     }
 
-    public function getHttpProtocol(): string
+    public static function getHttpProtocol(): string
     {
-        return $this->httpProtocol;
+        return self::getInstance()->httpProtocol;
     }
 
-    public function getHttpProtocolVersion(): string
+    public static function getHttpProtocolVersion(): string
     {
-        return $this->httpProtocolVersion;
+        return self::getInstance()->httpProtocolVersion;
     }
 
-    public function getHttpHost(): string
+    public static function getHttpHost(): string
     {
-        return $this->httpHost;
+        return self::getInstance()->httpHost;
     }
 
-    public function getServerName(): string
+    public static function getServerName(): string
     {
-        return $this->serverName;
+        return self::getInstance()->serverName;
     }
 
-    public function getRequestUri(): string
+    public static function getRequestUri(): string
     {
-        return $this->cleanedRequestUri;
+        return self::getInstance()->cleanedRequestUri;
     }
 
-    public function getFullRequestUri(): string
+    public static function getFullRequestUri(): string
     {
-        return $this->requestUri;
+        return self::getInstance()->requestUri;
     }
 
-    public function getRequestMethod(): string
+    public static function getRequestMethod(): string
     {
-        return $this->requestMethod;
+        return self::getInstance()->requestMethod;
     }
 
-    public function getPublicUrl(): string
+    public static function getPublicUrl(): string
     {
-        return $this->publicUrl;
+        return self::getInstance()->publicUrl;
     }
 
     public static function setPublicUrl(string $url): self
