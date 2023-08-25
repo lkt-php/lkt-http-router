@@ -259,6 +259,8 @@ class Router
         if (($isOnlyForLoggedUsers || $isOnlyNotForLoggedUsers) && is_callable($loggedUserChecker)) {
             $userIsLogged = call_user_func($loggedUserChecker, $vars);
 
+            if ($userIsLogged instanceof Response) return $userIsLogged;
+
             if ($isOnlyForLoggedUsers && $userIsLogged !== true) {
                 return Response::forbidden();
             }
