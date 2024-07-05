@@ -20,6 +20,8 @@ abstract class AbstractRoute
 
     protected SiteMapConfig|null $siteMap = null;
 
+    protected array $laminimConfig = [];
+
     public function __construct(string $route, callable $handler)
     {
         $this->route = $route;
@@ -62,6 +64,17 @@ abstract class AbstractRoute
     {
         $this->loggedUserChecker = $handler;
         return $this;
+    }
+
+    public function setLaminimConfig(array $laminimConfig): static
+    {
+        $this->laminimConfig = $laminimConfig;
+        return $this;
+    }
+
+    public function getLaminimConfig(): array
+    {
+        return $this->laminimConfig;
     }
 
     public function getLoggedUserChecker(): ?callable

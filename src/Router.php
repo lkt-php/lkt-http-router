@@ -16,6 +16,7 @@ class Router
     protected static $loggedUserChecker = null;
 
     protected static Response|null $forceResponse = null;
+    protected static mixed $currentRoute = null;
 
     public static function setLoggedUserChecker(callable $checker): void
     {
@@ -82,6 +83,7 @@ class Router
                     'onlyLoggedUsers' => $route->isOnlyForLoggedUsers(),
                     'onlyNotLoggedUsers' => $route->isOnlyForNotLoggedUsers(),
                     'accessCheckers' => $route->getAccessCheckers(),
+                    'laminim' => $route->getLaminimConfig(),
                 ]);
             }
         });
@@ -97,6 +99,8 @@ class Router
         $uri = rawurldecode($uri);
 
         $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
+
+        static::$currentRoute = $routeInfo[1];
 
         switch ($routeInfo[0]) {
             case Dispatcher::NOT_FOUND:
@@ -281,5 +285,10 @@ class Router
         }
 
         return null;
+    }
+
+    public static function getCurrentRoute()
+    {
+        return static::$currentRoute;
     }
 }
