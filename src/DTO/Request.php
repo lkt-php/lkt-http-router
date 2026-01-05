@@ -58,6 +58,10 @@ class Request
 
             $this->extractedTargetInstanceIdFromParamsKey = $extractIdKey;
             $this->targetInstance = $instance;
+            if (!$instance) {
+                $this->hasValidAccess = false;
+                return;
+            }
         } else {
             $this->targetInstance = null;
         }
