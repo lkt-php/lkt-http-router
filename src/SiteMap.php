@@ -10,7 +10,7 @@ class SiteMap
     {
         $r = [];
         foreach (Router::getGETRoutes() as $route) {
-            if (!$route->isOnlyForLoggedUsers() && $route->hasSiteMapConfig()) {
+            if (!$route->isOnlyForLoggedUsers() && !$route->isAdminRoute() && $route->hasSiteMapConfig()) {
                 $config = $route->getSiteMapConfig();
                 $r[$config->getLocation()] = $config->toString();
             }

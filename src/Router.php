@@ -4,9 +4,15 @@ namespace Lkt\Http;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
+use Lkt\Factory\Instantiator\Instances\AbstractInstance;
+use Lkt\Factory\Schemas\Schema;
+use Lkt\Http\DTO\Request;
+use Lkt\Http\Enums\AccessLevel;
 use Lkt\Http\Networking\Networking;
 use Lkt\Http\Routes\AbstractRoute;
 use Lkt\Http\Routes\GetRoute;
+use Lkt\Users\Instances\LktUser;
+use Lkt\Users\Interfaces\SessionUserInterface;
 use function FastRoute\simpleDispatcher;
 
 class Router
@@ -14,13 +20,28 @@ class Router
     protected static array $routes = [];
 
     protected static $loggedUserChecker = null;
+    protected static $loggedUserGetter = null;
 
     protected static Response|null $forceResponse = null;
     protected static mixed $currentRoute = null;
+    protected static string $loggedUserComponent = '';
 
     public static function setLoggedUserChecker(callable $checker): void
     {
         static::$loggedUserChecker = $checker;
+    }
+
+    public static function setLoggedUserGetter(callable $getter): void
+    {
+        static::$loggedUserGetter = $getter;
+    }
+
+    public static function getRouteLoggedUser(AbstractRoute $route): ?SessionUserInterface
+    {
+        if (Schema::exists('lkt-user')) {
+            return LktUser::getSignedInUser();
+        }
+        return null;
     }
 
     public static function addRoute(AbstractRoute $route, string $router = 'default'): void
@@ -79,11 +100,7 @@ class Router
             foreach ($routes as $route) {
                 $r->addRoute($route->getMethod(), $route->getRoute(), [
                     'handler' => $route->getHandler(),
-                    'loggedUserChecker' => $route->getLoggedUserChecker(),
-                    'onlyLoggedUsers' => $route->isOnlyForLoggedUsers(),
-                    'onlyNotLoggedUsers' => $route->isOnlyForNotLoggedUsers(),
-                    'accessCheckers' => $route->getAccessCheckers(),
-                    'laminim' => $route->getLaminimConfig(),
+                    'route' => $route,
                 ]);
             }
         });
@@ -112,22 +129,40 @@ class Router
                 break;
             case Dispatcher::FOUND:
                 $config = $routeInfo[1];
-                $loggedUserChecker = $config['loggedUserChecker'];
-                $isOnlyForLoggedUsers = $config['onlyLoggedUsers'];
-                $isOnlyNotForLoggedUsers = $config['onlyNotLoggedUsers'];
-                $accessCheckers = $config['accessCheckers'];
+
+                /** @var AbstractRoute $route */
+                $route = $config['route'];
+
+                $loggedUserChecker = $route->getLoggedUserChecker();
+                $accessCheckers = $route->getAccessCheckers();
                 $vars = [...$routeInfo[2], ...static::getRequestVars()];
 
-                $loggedCheckResponse = static::ensureLoggedUserChecker($loggedUserChecker, $isOnlyForLoggedUsers, $isOnlyNotForLoggedUsers, $accessCheckers, $vars);
+                $request = new Request(
+                    $vars,
+                    $route,
+                );
+
+                $loggedCheckResponse = static::ensureValidAccessChecker($loggedUserChecker, $request, $accessCheckers);
                 if ($loggedCheckResponse instanceof Response) return $loggedCheckResponse;
 
                 // Handle response
                 $handler = $config['handler'];
 
-                $response = call_user_func($handler, $vars);
-                if ($response instanceof Response) {
-                    return $response;
+                // Version migration helper
+                try {
+                    $method = new \ReflectionMethod($handler[0], $handler[1]);
+                    if ($method->getParameters()[0]?->getType()?->getName() === 'array' || $method->getParameters()[0]?->getType() === null) {
+                        $response = call_user_func($handler, $request->params);
+                    } else {
+                        $response = call_user_func($handler, $request);
+                    }
+                    if ($response instanceof Response) return $response;
+                } catch (\Exception $e) {
+
                 }
+
+                $response = call_user_func($handler, $request->params);
+                if ($response instanceof Response) return $response;
                 break;
         }
 
@@ -138,13 +173,9 @@ class Router
     {
         $result = call_user_func($checker, $vars);
 
-        if ($result instanceof Response) {
-            return $result;
-        }
+        if ($result instanceof Response) return $result;
 
-        if ($result === false) {
-            return Response::forbidden();
-        }
+        if ($result === false) return Response::forbidden();
 
         return null;
     }
@@ -253,23 +284,23 @@ class Router
         return null;
     }
 
-    protected static function ensureLoggedUserChecker($loggedUserChecker, bool $isOnlyForLoggedUsers, bool $isOnlyNotForLoggedUsers, $accessCheckers, $vars): ?Response
+    protected static function ensureValidAccessChecker($loggedUserChecker, Request $request, $accessCheckers): ?Response
     {
         if (!is_callable($loggedUserChecker) && is_callable(static::$loggedUserChecker)) {
             $loggedUserChecker = static::$loggedUserChecker;
         }
 
         // Check if logged is user
-        if (($isOnlyForLoggedUsers || $isOnlyNotForLoggedUsers) && is_callable($loggedUserChecker)) {
-            $userIsLogged = call_user_func($loggedUserChecker, $vars);
+        if (($request->accessLevel === AccessLevel::OnlyLoggedUsers || $request->accessLevel === AccessLevel::OnlyNotLoggedUsers) && is_callable($loggedUserChecker)) {
+            $userIsLogged = call_user_func($loggedUserChecker, $request->params);
 
             if ($userIsLogged instanceof Response) return $userIsLogged;
 
-            if ($isOnlyForLoggedUsers && $userIsLogged !== true) {
+            if ($request->accessLevel === AccessLevel::OnlyLoggedUsers && $userIsLogged !== true) {
                 return Response::forbidden();
             }
 
-            if ($isOnlyNotForLoggedUsers && $userIsLogged === true) {
+            if ($request->accessLevel === AccessLevel::OnlyNotLoggedUsers && $userIsLogged === true) {
                 return Response::notFound();
             }
         }
@@ -277,10 +308,8 @@ class Router
         // Check custom access checkers
         if (count($accessCheckers) > 0) {
             foreach ($accessCheckers as $accessChecker) {
-                $checked = static::runAccessChecker($accessChecker, $vars);
-                if ($checked instanceof Response) {
-                    return $checked;
-                }
+                $checked = static::runAccessChecker($accessChecker, $request->params);
+                if ($checked instanceof Response) return $checked;
             }
         }
 

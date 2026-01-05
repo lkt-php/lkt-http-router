@@ -2,6 +2,7 @@
 
 namespace Lkt\Http\Routes;
 
+use Lkt\Http\Enums\AccessLevel;
 use Lkt\Http\Router;
 use Lkt\Http\SiteMap\SiteMapConfig;
 
@@ -13,14 +14,14 @@ abstract class AbstractRoute
     protected $handler = null;
     protected array $accessCheckers = [];
 
-    protected bool $onlyLoggedUser = false;
-    protected bool $onlyNotLoggedUser = false;
+    protected AccessLevel $accessLevel = AccessLevel::Public;
+
+    protected string $targetComponent = '';
+    protected string $extractIdColumnValueFromParamsKey = '';
 
     protected $loggedUserChecker = null;
 
     protected SiteMapConfig|null $siteMap = null;
-
-    protected array $laminimConfig = [];
 
     public function __construct(string $route, callable $handler)
     {
@@ -48,33 +49,50 @@ abstract class AbstractRoute
         return $this->handler;
     }
 
-    public function setOnlyLoggedUsers(bool $status = true): static
+    public function setOnlyLoggedUsers(): static
     {
-        $this->onlyLoggedUser = $status;
+        $this->accessLevel = AccessLevel::OnlyLoggedUsers;
         return $this;
     }
 
-    public function setOnlyNotLoggedUsers(bool $status = true): static
+    public function setOnlyNotLoggedUsers(): static
     {
-        $this->onlyNotLoggedUser = $status;
+        $this->accessLevel = AccessLevel::OnlyNotLoggedUsers;
         return $this;
+    }
+
+    public function setAdminRoute(): static
+    {
+        $this->accessLevel = AccessLevel::OnlyAdminUsers;
+        return $this;
+    }
+
+    public function setTargetComponent(string $component): static
+    {
+        $this->targetComponent = $component;
+        return $this;
+    }
+
+    public function getTargetComponent(): string
+    {
+        return $this->targetComponent;
+    }
+
+    public function setIdColumnValueParamsExtractionKey(string $column): static
+    {
+        $this->extractIdColumnValueFromParamsKey = $column;
+        return $this;
+    }
+
+    public function getIdColumnValueParamsExtractionKey(): string
+    {
+        return $this->extractIdColumnValueFromParamsKey;
     }
 
     public function setLoggedUserChecker(callable $handler): static
     {
         $this->loggedUserChecker = $handler;
         return $this;
-    }
-
-    public function setLaminimConfig(array $laminimConfig): static
-    {
-        $this->laminimConfig = $laminimConfig;
-        return $this;
-    }
-
-    public function getLaminimConfig(): array
-    {
-        return $this->laminimConfig;
     }
 
     public function getLoggedUserChecker(): ?callable
@@ -84,18 +102,28 @@ abstract class AbstractRoute
 
     public function isOnlyForLoggedUsers(): bool
     {
-        return $this->onlyLoggedUser;
+        return $this->accessLevel === AccessLevel::OnlyLoggedUsers;
     }
 
     public function isOnlyForNotLoggedUsers(): bool
     {
-        return $this->onlyNotLoggedUser;
+        return $this->accessLevel === AccessLevel::OnlyNotLoggedUsers;
+    }
+
+    public function isAdminRoute(): bool
+    {
+        return $this->accessLevel === AccessLevel::OnlyAdminUsers;
     }
 
     public function addAccessChecker(callable $checker): static
     {
         $this->accessCheckers[] = $checker;
         return $this;
+    }
+
+    public function getAccessLevel(): AccessLevel
+    {
+        return $this->accessLevel;
     }
 
     public function getAccessCheckers(): array
@@ -138,6 +166,14 @@ abstract class AbstractRoute
     {
         $r = new static($route, $handler);
         $r->setOnlyNotLoggedUsers();
+        Router::addRoute($r);
+        return $r;
+    }
+
+    public static function admin(string $route, callable $handler): static
+    {
+        $r = new static($route, $handler);
+        $r->setAdminRoute();
         Router::addRoute($r);
         return $r;
     }
