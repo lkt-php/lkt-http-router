@@ -7,7 +7,6 @@ use Lkt\Factory\Schemas\Schema;
 use Lkt\Http\Enums\AccessLevel;
 use Lkt\Http\Router;
 use Lkt\Http\Routes\AbstractRoute;
-use Lkt\Users\Enums\RoleCapability;
 use Lkt\Users\Interfaces\SessionUserInterface;
 
 class Request

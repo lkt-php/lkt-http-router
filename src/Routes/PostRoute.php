@@ -2,8 +2,9 @@
 
 namespace Lkt\Http\Routes;
 
+use Lkt\Http\Enums\RouteMethod;
+
 class PostRoute extends AbstractRoute
 {
-
-    protected const METHOD = 'POST';
+    protected RouteMethod $method = RouteMethod::Post;
 }

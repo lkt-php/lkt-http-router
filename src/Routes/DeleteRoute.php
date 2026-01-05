@@ -2,7 +2,9 @@
 
 namespace Lkt\Http\Routes;
 
+use Lkt\Http\Enums\RouteMethod;
+
 class DeleteRoute extends AbstractRoute
 {
-    protected const METHOD = 'DELETE';
+    protected RouteMethod $method = RouteMethod::Delete;
 }

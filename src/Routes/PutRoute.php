@@ -2,8 +2,9 @@
 
 namespace Lkt\Http\Routes;
 
+use Lkt\Http\Enums\RouteMethod;
+
 class PutRoute extends AbstractRoute
 {
-
-    protected const METHOD = 'PUT';
+    protected RouteMethod $method = RouteMethod::Put;
 }

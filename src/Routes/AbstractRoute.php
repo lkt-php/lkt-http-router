@@ -3,12 +3,14 @@
 namespace Lkt\Http\Routes;
 
 use Lkt\Http\Enums\AccessLevel;
+use Lkt\Http\Enums\RouteMethod;
+use Lkt\Http\Enums\SiteMapChangeFrequency;
 use Lkt\Http\Router;
 use Lkt\Http\SiteMap\SiteMapConfig;
 
 abstract class AbstractRoute
 {
-    protected const METHOD = 'GET';
+    protected RouteMethod $method = RouteMethod::Get;
 
     protected string $route = '';
     protected $handler = null;
@@ -33,7 +35,7 @@ abstract class AbstractRoute
 
     public function getMethod(): string
     {
-        return static::METHOD;
+        return $this->method->value;
     }
 
     public function getRoute(): string
@@ -144,8 +146,11 @@ abstract class AbstractRoute
         return $this->accessCheckers;
     }
 
-    public function addToSiteMap(string $changeFrequency = SiteMapConfig::CHANGE_FREQUENCY_NEVER, float $priority = 0.0): static
+    public function addToSiteMap(string|SiteMapChangeFrequency $changeFrequency = SiteMapChangeFrequency::Never, float $priority = 0.0): static
     {
+        if (is_string($changeFrequency)) {
+            $changeFrequency = SiteMapChangeFrequency::tryFrom($changeFrequency);
+        }
         $this->siteMap = new SiteMapConfig($this->route, $changeFrequency, $priority);
         return $this;
     }
