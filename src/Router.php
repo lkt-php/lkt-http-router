@@ -26,6 +26,8 @@ class Router
     protected static mixed $currentRoute = null;
     protected static string $loggedUserComponent = '';
 
+    protected static bool $ensureLoggedUser = true;
+
     public static function setLoggedUserChecker(callable $checker): void
     {
         static::$loggedUserChecker = $checker;
@@ -36,8 +38,23 @@ class Router
         static::$loggedUserGetter = $getter;
     }
 
+    public static function setLoggedUserComponent(string $component): void
+    {
+        static::$loggedUserComponent = $component;
+    }
+
+    public static function setEnsureLoggedUser(bool $status = true): void
+    {
+        static::$ensureLoggedUser = $status;
+    }
+
     public static function getRouteLoggedUser(AbstractRoute $route): ?SessionUserInterface
     {
+        if (static::$loggedUserComponent !== '' && Schema::exists(static::$loggedUserComponent)) {
+            $schema = Schema::get(static::$loggedUserComponent);
+            $aux = $schema->getItemInstance();
+            return $aux::getSignedInUser();
+        }
         if (Schema::exists('lkt-user')) {
             return LktUser::getSignedInUser();
         }
@@ -140,7 +157,10 @@ class Router
                 $request = new Request(
                     $vars,
                     $route,
+                    static::$ensureLoggedUser,
                 );
+
+                if (!$request->hasValidAccess) return Response::forbidden();
 
                 $loggedCheckResponse = static::ensureValidAccessChecker($loggedUserChecker, $request, $accessCheckers);
                 if ($loggedCheckResponse instanceof Response) return $loggedCheckResponse;

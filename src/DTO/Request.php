@@ -7,6 +7,7 @@ use Lkt\Factory\Schemas\Schema;
 use Lkt\Http\Enums\AccessLevel;
 use Lkt\Http\Router;
 use Lkt\Http\Routes\AbstractRoute;
+use Lkt\Users\Enums\RoleCapability;
 use Lkt\Users\Interfaces\SessionUserInterface;
 
 class Request
@@ -15,7 +16,7 @@ class Request
     readonly public string $targetComponent;
     readonly public string $extractedTargetInstanceIdFromParamsKey;
     readonly public AbstractInstance|null $targetInstance;
-    readonly public SessionUserInterface $loggedUser;
+    readonly public SessionUserInterface|null $loggedUser;
 
     readonly public bool $hasValidAccess;
 
@@ -23,6 +24,7 @@ class Request
     public function __construct(
         readonly public array       $params = [],
         AbstractRoute $route,
+        bool $ensureLoggedUser = true,
     )
     {
         $this->accessLevel = $route->getAccessLevel();
@@ -34,16 +36,15 @@ class Request
             return;
         }
 
-        if (!$this->loggedUser && ($this->accessLevel === AccessLevel::OnlyLoggedUsers || $this->accessLevel === AccessLevel::OnlyAdminUsers)) {
+        if ($ensureLoggedUser && !$this->loggedUser && ($this->accessLevel === AccessLevel::OnlyLoggedUsers || $this->accessLevel === AccessLevel::OnlyAdminUsers)) {
             $this->hasValidAccess = false;
             return;
         }
 
-        $hasValidAccess = true;
-
-
-
-
+        if ($this->accessLevel === AccessLevel::OnlyAdminUsers && count($this->loggedUser?->getAdminRolesData()) === 0) {
+            $this->hasValidAccess = false;
+            return;
+        }
 
         // Access Level: Component
         $this->targetComponent = $route->getTargetComponent();
@@ -57,6 +58,34 @@ class Request
 
             $this->extractedTargetInstanceIdFromParamsKey = $extractIdKey;
             $this->targetInstance = $instance;
+        } else {
+            $this->targetInstance = null;
         }
+
+        if ($this->targetComponent){
+            if ($this->accessLevel === AccessLevel::OnlyAdminUsers) {
+                $isValid = true;
+                foreach ($route->getRequiredPermissions() as $permission) {
+                    $isValid = $isValid && $this->loggedUser->hasAdminPermission($this->targetComponent, $permission, $this->targetInstance);
+                }
+                if (!$isValid) {
+                    $this->hasValidAccess = $isValid;
+                    return;
+                }
+
+            } else if ($this->accessLevel === AccessLevel::OnlyLoggedUsers) {
+                $isValid = true;
+                foreach ($route->getRequiredPermissions() as $permission) {
+                    $isValid = $isValid && $this->loggedUser->hasAppPermission($this->targetComponent, $permission, $this->targetInstance);
+                }
+
+                if (!$isValid) {
+                    $this->hasValidAccess = $isValid;
+                    return;
+                }
+            }
+        }
+
+        $this->hasValidAccess = true;
     }
 }

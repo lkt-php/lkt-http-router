@@ -23,6 +23,8 @@ abstract class AbstractRoute
 
     protected SiteMapConfig|null $siteMap = null;
 
+    protected array $requiredPermissions = [];
+
     public function __construct(string $route, callable $handler)
     {
         $this->route = $route;
@@ -71,6 +73,17 @@ abstract class AbstractRoute
     {
         $this->targetComponent = $component;
         return $this;
+    }
+
+    public function setRequiredPermissions(array $permissions): static
+    {
+        $this->requiredPermissions = $permissions;
+        return $this;
+    }
+
+    public function getRequiredPermissions(): array
+    {
+        return $this->requiredPermissions;
     }
 
     public function getTargetComponent(): string
