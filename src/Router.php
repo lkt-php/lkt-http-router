@@ -4,7 +4,6 @@ namespace Lkt\Http;
 
 use FastRoute\Dispatcher;
 use FastRoute\RouteCollector;
-use Lkt\Factory\Instantiator\Instances\AbstractInstance;
 use Lkt\Factory\Schemas\Schema;
 use Lkt\Http\DTO\Request;
 use Lkt\Http\Enums\AccessLevel;

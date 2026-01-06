@@ -2,8 +2,6 @@
 
 namespace Lkt\Http;
 
-use Lkt\Templates\Template;
-
 class SiteMap
 {
     public static function getResponse(): Response
@@ -18,17 +16,11 @@ class SiteMap
 
         ksort($routes);
 
-        $siteMap = [];
-        $siteMap[] = "<?xml version='1.0' encoding='UTF-8'?>";
-        $siteMap[] = "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
-        foreach ($routes as $route) {
-            $siteMap[] = $route;
-        }
+        $siteMap = ["<?xml version='1.0' encoding='UTF-8'?>", "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"];
+        foreach ($routes as $route) $siteMap[] = $route;
         $siteMap[] = "</urlset>";
 
-        return Response::ok(
-            implode('', $siteMap),
-        )->setContentTypeTextXML();
+        return Response::ok(implode('', $siteMap))->setContentTypeTextXML();
     }
 
     public static function dispatch(): void
