@@ -61,6 +61,11 @@ class Request
                 $this->hasValidAccess = false;
                 return;
             }
+        } elseif ($this->targetComponent && $route->isAnonymousTarget()) {
+            $schema = Schema::get($this->targetComponent);
+            $instance = $schema->getItemInstance();
+            $this->targetInstance = $instance;
+
         } else {
             $this->targetInstance = null;
         }

@@ -20,6 +20,7 @@ abstract class AbstractRoute
 
     protected string $targetComponent = '';
     protected string $extractIdColumnValueFromParamsKey = '';
+    protected bool $anonymousTarget = false;
 
     protected $loggedUserChecker = null;
 
@@ -75,6 +76,17 @@ abstract class AbstractRoute
     {
         $this->targetComponent = $component;
         return $this;
+    }
+
+    public function setAnonymousTarget(bool $status = true): static
+    {
+        $this->anonymousTarget = $status;
+        return $this;
+    }
+
+    public function isAnonymousTarget(): bool
+    {
+        return $this->anonymousTarget;
     }
 
     public function setRequiredPermissions(array $permissions): static
