@@ -8,18 +8,26 @@ class SiteMap
 {
     public static function getResponse(): Response
     {
-        $r = [];
+        $routes = [];
         foreach (Router::getGETRoutes() as $route) {
             if (!$route->isOnlyForLoggedUsers() && !$route->isAdminRoute() && $route->hasSiteMapConfig()) {
                 $config = $route->getSiteMapConfig();
-                $r[$config->getLocation()] = $config->toString();
+                $routes[$config->getLocation()] = $config->toString();
             }
         }
 
-        ksort($r);
+        ksort($routes);
+
+        $siteMap = [];
+        $siteMap[] = "<?xml version='1.0' encoding='UTF-8'?>";
+        $siteMap[] = "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">";
+        foreach ($routes as $route) {
+            $siteMap[] = $route;
+        }
+        $siteMap[] = "</urlset>";
 
         return Response::ok(
-            Template::file(__DIR__ . '/../resources/phtml/sitemap.phtml')->setData(['routes' => $r])
+            implode('', $siteMap),
         )->setContentTypeTextXML();
     }
 
