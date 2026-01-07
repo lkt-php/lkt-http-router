@@ -1,11 +1,10 @@
 <?php
 
-namespace Lkt\Http\DTO;
+namespace Lkt\Http;
 
 use Lkt\Factory\Instantiator\Instances\AbstractInstance;
 use Lkt\Factory\Schemas\Schema;
 use Lkt\Http\Enums\AccessLevel;
-use Lkt\Http\Router;
 use Lkt\Http\Routes\AbstractRoute;
 use Lkt\Users\Interfaces\SessionUserInterface;
 
@@ -13,6 +12,8 @@ class Request
 {
     readonly public AccessLevel $accessLevel;
     readonly public string $targetComponent;
+    readonly public string $targetAccessPolicy;
+    readonly public array $attemptToGrantPerms;
     readonly public string $extractedTargetInstanceIdFromParamsKey;
     readonly public AbstractInstance|null $targetInstance;
     readonly public SessionUserInterface|null $loggedUser;
@@ -47,6 +48,8 @@ class Request
 
         // Access Level: Component
         $this->targetComponent = $route->getTargetComponent();
+        $this->targetAccessPolicy = $route->getTargetAccessPolicy();
+        $this->attemptToGrantPerms = $route->getGrantedPermsAttempt();
 
         // Access Level: Component Instance
         $extractIdKey = $route->getIdColumnValueParamsExtractionKey();

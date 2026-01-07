@@ -19,8 +19,11 @@ abstract class AbstractRoute
     protected AccessLevel $accessLevel = AccessLevel::Public;
 
     protected string $targetComponent = '';
+    protected string $targetAccessPolicy = '';
     protected string $extractIdColumnValueFromParamsKey = '';
     protected bool $anonymousTarget = false;
+
+    protected array $attemptToGrantPerms = [];
 
     protected $loggedUserChecker = null;
 
@@ -78,6 +81,18 @@ abstract class AbstractRoute
         return $this;
     }
 
+    public function setTargetAccessPolicy(string $accessPolicy): static
+    {
+        $this->targetAccessPolicy = $accessPolicy;
+        return $this;
+    }
+
+    public function setGrantedPermsAttempt(array $perms): static
+    {
+        $this->attemptToGrantPerms = $perms;
+        return $this;
+    }
+
     public function setAnonymousTarget(bool $status = true): static
     {
         $this->anonymousTarget = $status;
@@ -103,6 +118,16 @@ abstract class AbstractRoute
     public function getTargetComponent(): string
     {
         return $this->targetComponent;
+    }
+
+    public function getTargetAccessPolicy(): string
+    {
+        return $this->targetAccessPolicy;
+    }
+
+    public function getGrantedPermsAttempt(): array
+    {
+        return $this->attemptToGrantPerms;
     }
 
     public function setIdColumnValueParamsExtractionKey(string $column): static
