@@ -19,6 +19,7 @@ class Request
     readonly public SessionUserInterface|null $loggedUser;
 
     readonly public bool $hasValidAccess;
+    readonly public int $page;
 
 
     public function __construct(
@@ -45,6 +46,10 @@ class Request
             $this->hasValidAccess = false;
             return;
         }
+
+        // Page
+        $extractPageKey = $route->getPageValueParamsExtractionKey();
+        if ($extractPageKey) $this->page = (int)$this->params[$extractPageKey];
 
         // Access Level: Component
         $this->targetComponent = $route->getTargetComponent();

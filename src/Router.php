@@ -169,7 +169,11 @@ class Router
                 // Version migration helper
                 try {
                     $method = new \ReflectionMethod($handler[0], $handler[1]);
-                    if ($method->getParameters()[0]?->getType()?->getName() === 'array' || $method->getParameters()[0]?->getType() === null) {
+
+                    if ($method->getParameters()[0]?->getType()?->getName() === 'Lkt\Http\Request') {
+                        $response = call_user_func($handler, $request);
+
+                    } elseif ($method->getParameters()[0]?->getType()?->getName() === 'array' || $method->getParameters()[0]?->getType() === null) {
                         $response = call_user_func($handler, $request->params);
                     } else {
                         $response = call_user_func($handler, $request);

@@ -3,10 +3,12 @@
 namespace Lkt\Http;
 
 use Lkt\Factory\Schemas\Enums\AccessPolicyEndOfLife;
-use Lkt\Http\Enums\AccessLevel;
+use Lkt\Factory\Schemas\Schema;
 
 class BasicHttpHandler
 {
+    public const Page = [self::class, 'pg'];
+    public const List = [self::class, 'ls'];
     public const Create = [self::class, 'mk'];
     public const Read = [self::class, 'r'];
     public const Update = [self::class, 'up'];
@@ -19,39 +21,13 @@ class BasicHttpHandler
         }
 
         $perm = [];
-
         if ($request->loggedUser) {
-            // Test perms which must be tested before granted
-            foreach ($request->attemptToGrantPerms as $i => $grantedPerm) {
-
-                // Determine which perms are gonna be tested
-                // (it can be the array key (if string), or (if numeric array key) the array value or an array of string at array value)
-                $testedPerm = is_numeric($i) ? $grantedPerm : $i;
-                $testedPerms = [];
-                if (is_array($testedPerm)) $testedPerms = $testedPerm;
-                else $testedPerms[] = $testedPerm;
-
-                // Determine which perms are gonna be granted
-                // It can be a single perm or an array of perms
-                $grantedPerms = [];
-                if (is_array($grantedPerm)) $grantedPerms = $grantedPerm;
-                else $grantedPerms[] = $grantedPerm;
-
-                // Test permissions differently if it's an admin route or not
-                if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
-                    foreach ($testedPerms as $testedPerm) {
-                        if ($request->loggedUser->hasAdminPermission($request->targetComponent, $testedPerm, $request->targetInstance)) {
-                            foreach ($grantedPerms as $grantedPerm) $perm[] = $grantedPerm;
-                        }
-                    }
-                } else {
-                    foreach ($testedPerms as $testedPerm) {
-                        if ($request->loggedUser->hasAppPermission($request->targetComponent, $testedPerm, $request->targetInstance)) {
-                            foreach ($grantedPerms as $grantedPerm) $perm[] = $grantedPerm;
-                        }
-                    }
-                }
-            }
+            $perm = $request->loggedUser->attemptToGrantPermissions(
+                $request->accessLevel,
+                $request->targetComponent,
+                $request->attemptToGrantPerms,
+                $request->targetInstance,
+            );
         }
 
         $perm = array_unique($perm);
@@ -86,5 +62,66 @@ class BasicHttpHandler
     {
         $request->targetInstance->delete();
         return Response::ok();
+    }
+
+    public static function pg(Request $request): Response
+    {
+        $schema = Schema::get($request->targetComponent);
+        $helperInstance = $schema->getItemInstance();
+        $builder = $helperInstance::getQueryCaller();
+        $rawResults = $helperInstance::getPage($request->page, $builder);
+        $results = [];
+        foreach ($rawResults as $rawResult) {
+            if ($request->targetAccessPolicy) {
+                $rawResult->setAccessPolicy($request->targetAccessPolicy, AccessPolicyEndOfLife::UntilNextRead);
+            }
+            $results[] = $rawResult->autoRead();
+        }
+
+        $perm = [];
+        if ($request->loggedUser) {
+            $perm = $request->loggedUser->attemptToGrantPermissions(
+                $request->accessLevel,
+                $request->targetComponent,
+                $request->attemptToGrantPerms,
+                null,
+            );
+        }
+
+        return Response::ok([
+            'results' => $results,
+            'maxPage' => $request->targetInstance::getAmountOfPages($builder),
+            'perm' => $perm
+        ]);
+    }
+
+    public static function ls(Request $request): Response
+    {
+        $schema = Schema::get($request->targetComponent);
+        $helperInstance = $schema->getItemInstance();
+        $builder = $helperInstance::getQueryCaller();
+        $rawResults = $helperInstance::getMany($builder);
+        $results = [];
+        foreach ($rawResults as $rawResult) {
+            if ($request->targetAccessPolicy) {
+                $rawResult->setAccessPolicy($request->targetAccessPolicy, AccessPolicyEndOfLife::UntilNextRead);
+            }
+            $results[] = $rawResult->autoRead();
+        }
+
+        $perm = [];
+        if ($request->loggedUser) {
+            $perm = $request->loggedUser->attemptToGrantPermissions(
+                $request->accessLevel,
+                $request->targetComponent,
+                $request->attemptToGrantPerms,
+                null,
+            );
+        }
+
+        return Response::ok([
+            'results' => $results,
+            'perm' => $perm
+        ]);
     }
 }

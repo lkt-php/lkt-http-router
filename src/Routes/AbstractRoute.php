@@ -21,6 +21,7 @@ abstract class AbstractRoute
     protected string $targetComponent = '';
     protected string $targetAccessPolicy = '';
     protected string $extractIdColumnValueFromParamsKey = '';
+    protected string $extractPageFromParamsKey = '';
     protected bool $anonymousTarget = false;
 
     protected array $attemptToGrantPerms = [];
@@ -136,9 +137,20 @@ abstract class AbstractRoute
         return $this;
     }
 
+    public function setPageValueParamsExtractionKey(string $column): static
+    {
+        $this->extractPageFromParamsKey = $column;
+        return $this;
+    }
+
     public function getIdColumnValueParamsExtractionKey(): string
     {
         return $this->extractIdColumnValueFromParamsKey;
+    }
+
+    public function getPageValueParamsExtractionKey(): string
+    {
+        return $this->extractPageFromParamsKey;
     }
 
     public function setLoggedUserChecker(callable $handler): static
