@@ -28,6 +28,14 @@ class Router
 
     protected static Request|null $request = null;
 
+    /** @var Notification[] */
+    protected static array $pendingNotifications = [];
+
+    public static function addPendingNotification(Notification $toast): void
+    {
+        static::$pendingNotifications[] = $toast;
+    }
+
     public static function getRequest(): Request|null
     {
         return static::$request;
@@ -187,7 +195,18 @@ class Router
                     } else {
                         $response = call_user_func($handler, $request);
                     }
-                    if ($response instanceof Response) return $response;
+
+                    if ($response instanceof Response) {
+                        $responseData = $response->getResponseData();
+                        if (is_array($responseData) && count(static::$pendingNotifications) > 0) {
+                            $responseData['notifications'] = [];
+                            foreach (static::$pendingNotifications as $toast) {
+                                $responseData['notifications'][] = $toast->toArray();
+                            }
+                        }
+                        $response->setResponseData($responseData);
+                        return $response;
+                    }
 //                } catch (\Exception $e) {
 //
 //                }
