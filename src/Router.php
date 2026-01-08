@@ -26,6 +26,13 @@ class Router
 
     protected static bool $ensureLoggedUser = true;
 
+    protected static Request|null $request = null;
+
+    public static function getRequest(): Request|null
+    {
+        return static::$request;
+    }
+
     public static function setLoggedUserChecker(callable $checker): void
     {
         static::$loggedUserChecker = $checker;
@@ -158,6 +165,8 @@ class Router
                     static::$ensureLoggedUser,
                 );
 
+                static::$request = $request;
+
                 if (!$request->hasValidAccess) return Response::forbidden();
 
                 $loggedCheckResponse = static::ensureValidAccessChecker($loggedUserChecker, $request, $accessCheckers);
@@ -167,7 +176,7 @@ class Router
                 $handler = $config['handler'];
 
                 // Version migration helper
-                try {
+//                try {
                     $method = new \ReflectionMethod($handler[0], $handler[1]);
 
                     if ($method->getParameters()[0]?->getType()?->getName() === 'Lkt\Http\Request') {
@@ -179,12 +188,12 @@ class Router
                         $response = call_user_func($handler, $request);
                     }
                     if ($response instanceof Response) return $response;
-                } catch (\Exception $e) {
-
-                }
-
-                $response = call_user_func($handler, $request->params);
-                if ($response instanceof Response) return $response;
+//                } catch (\Exception $e) {
+//
+//                }
+//
+//                $response = call_user_func($handler, $request->params);
+//                if ($response instanceof Response) return $response;
                 break;
         }
 

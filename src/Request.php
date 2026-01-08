@@ -104,4 +104,9 @@ class Request
 
         $this->hasValidAccess = true;
     }
+
+    public static function getCurrent(): static|null
+    {
+        return Router::getRequest();
+    }
 }
