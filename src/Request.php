@@ -7,6 +7,7 @@ use Lkt\Factory\Schemas\Schema;
 use Lkt\Http\Enums\AccessLevel;
 use Lkt\Http\Routes\AbstractRoute;
 use Lkt\Users\Interfaces\SessionUserInterface;
+use \Lkt\WebItems\WebItem;
 
 class Request
 {
@@ -15,6 +16,7 @@ class Request
     readonly public string $targetAccessPolicy;
     readonly public array $attemptToGrantPerms;
     readonly public string $extractedTargetInstanceIdFromParamsKey;
+    readonly public WebItem|null $targetWebItem;
     readonly public AbstractInstance|null $targetInstance;
     readonly public SessionUserInterface|null $loggedUser;
 
@@ -52,7 +54,16 @@ class Request
         if ($extractPageKey) $this->page = (int)$this->params[$extractPageKey];
 
         // Access Level: Component
-        $this->targetComponent = $route->getTargetComponent();
+        $extractWebItemKey = $route->getWebItemValueParamsExtractionKey();
+        if ($extractWebItemKey) {
+            $this->targetWebItem = WebItem::detectWebItem($this->params[$extractWebItemKey]);
+            if ($this->targetWebItem) $this->targetComponent = $this->targetWebItem->component;
+            else $this->targetComponent = '';
+
+        } else {
+            $this->targetComponent = $route->getTargetComponent();
+            $this->targetWebItem = null;
+        }
         $this->targetAccessPolicy = $route->getTargetAccessPolicy();
         $this->attemptToGrantPerms = $route->getGrantedPermsAttempt();
 

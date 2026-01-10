@@ -4,6 +4,8 @@ namespace Lkt\Http;
 
 use Lkt\Factory\Schemas\Enums\AccessPolicyEndOfLife;
 use Lkt\Factory\Schemas\Schema;
+use Lkt\Http\Enums\AccessLevel;
+use Lkt\WebItems\Enums\WebItemAction;
 
 class BasicHttpHandler
 {
@@ -16,8 +18,28 @@ class BasicHttpHandler
 
     public static function r(Request $request): Response
     {
-        if ($request->targetAccessPolicy) {
-            $request->targetInstance->setAccessPolicy($request->targetAccessPolicy, AccessPolicyEndOfLife::UntilNextRead);
+        $accessPolicy = $request->targetAccessPolicy;
+        if ($request->targetWebItem) {
+            if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+            else {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+        }
+
+        if ($accessPolicy) {
+            $request->targetInstance->setAccessPolicy($accessPolicy, AccessPolicyEndOfLife::UntilNextRead);
         }
 
         $perm = [];
@@ -40,8 +62,28 @@ class BasicHttpHandler
 
     public static function mk(Request $request): Response
     {
-        if ($request->targetAccessPolicy) {
-            $request->targetInstance->setAccessPolicy($request->targetAccessPolicy, AccessPolicyEndOfLife::UntilNextWrite);
+        $accessPolicy = $request->targetAccessPolicy;
+        if ($request->targetWebItem) {
+            if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+            else {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+        }
+
+        if ($accessPolicy) {
+            $request->targetInstance->setAccessPolicy($accessPolicy, AccessPolicyEndOfLife::UntilNextWrite);
         }
         $request->targetInstance->autoCreate($request->params);
 
@@ -50,8 +92,28 @@ class BasicHttpHandler
 
     public static function up(Request $request): Response
     {
-        if ($request->targetAccessPolicy) {
-            $request->targetInstance->setAccessPolicy($request->targetAccessPolicy, AccessPolicyEndOfLife::UntilNextWrite);
+        $accessPolicy = $request->targetAccessPolicy;
+        if ($request->targetWebItem) {
+            if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+            else {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+        }
+
+        if ($accessPolicy) {
+            $request->targetInstance->setAccessPolicy($accessPolicy, AccessPolicyEndOfLife::UntilNextWrite);
         }
         $request->targetInstance->autoUpdate($request->params);
 
@@ -66,14 +128,36 @@ class BasicHttpHandler
 
     public static function pg(Request $request): Response
     {
+        $accessPolicy = $request->targetAccessPolicy;
+        if ($request->targetWebItem) {
+            if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+            else {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+        }
+
+        if (!$request->targetComponent) return Response::badRequest();
+
         $schema = Schema::get($request->targetComponent);
         $helperInstance = $schema->getItemInstance();
         $builder = $helperInstance::getQueryCaller();
         $rawResults = $helperInstance::getPage($request->page, $builder);
         $results = [];
         foreach ($rawResults as $rawResult) {
-            if ($request->targetAccessPolicy) {
-                $rawResult->setAccessPolicy($request->targetAccessPolicy, AccessPolicyEndOfLife::UntilNextRead);
+            if ($accessPolicy) {
+                $rawResult->setAccessPolicy($accessPolicy, AccessPolicyEndOfLife::UntilNextRead);
             }
             $results[] = $rawResult->autoRead();
         }
@@ -97,14 +181,37 @@ class BasicHttpHandler
 
     public static function ls(Request $request): Response
     {
+        $accessPolicy = $request->targetAccessPolicy;
+        if ($request->targetWebItem) {
+            if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+            else {
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+
+                if (!$accessPolicy) {
+                    $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
+                    if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
+                }
+            }
+        }
+
+
+        if (!$request->targetComponent) return Response::badRequest();
+
         $schema = Schema::get($request->targetComponent);
         $helperInstance = $schema->getItemInstance();
         $builder = $helperInstance::getQueryCaller();
         $rawResults = $helperInstance::getMany($builder);
         $results = [];
         foreach ($rawResults as $rawResult) {
-            if ($request->targetAccessPolicy) {
-                $rawResult->setAccessPolicy($request->targetAccessPolicy, AccessPolicyEndOfLife::UntilNextRead);
+            if ($accessPolicy) {
+                $rawResult->setAccessPolicy($accessPolicy, AccessPolicyEndOfLife::UntilNextRead);
             }
             $results[] = $rawResult->autoRead();
         }

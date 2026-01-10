@@ -22,6 +22,7 @@ abstract class AbstractRoute
     protected string $targetAccessPolicy = '';
     protected string $extractIdColumnValueFromParamsKey = '';
     protected string $extractPageFromParamsKey = '';
+    protected string $extractWebItemFromParamsKey = '';
     protected bool $anonymousTarget = false;
 
     protected array $attemptToGrantPerms = [];
@@ -143,6 +144,12 @@ abstract class AbstractRoute
         return $this;
     }
 
+    public function setWebItemValueParamsExtractionKey(string $column): static
+    {
+        $this->extractWebItemFromParamsKey = $column;
+        return $this;
+    }
+
     public function getIdColumnValueParamsExtractionKey(): string
     {
         return $this->extractIdColumnValueFromParamsKey;
@@ -151,6 +158,11 @@ abstract class AbstractRoute
     public function getPageValueParamsExtractionKey(): string
     {
         return $this->extractPageFromParamsKey;
+    }
+
+    public function getWebItemValueParamsExtractionKey(): string
+    {
+        return $this->extractWebItemFromParamsKey;
     }
 
     public function setLoggedUserChecker(callable $handler): static

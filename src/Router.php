@@ -184,35 +184,28 @@ class Router
                 $handler = $config['handler'];
 
                 // Version migration helper
-//                try {
-                    $method = new \ReflectionMethod($handler[0], $handler[1]);
+                $method = new \ReflectionMethod($handler[0], $handler[1]);
 
-                    if ($method->getParameters()[0]?->getType()?->getName() === 'Lkt\Http\Request') {
-                        $response = call_user_func($handler, $request);
+                if ($method->getParameters()[0]?->getType()?->getName() === 'Lkt\Http\Request') {
+                    $response = call_user_func($handler, $request);
 
-                    } elseif ($method->getParameters()[0]?->getType()?->getName() === 'array' || $method->getParameters()[0]?->getType() === null) {
-                        $response = call_user_func($handler, $request->params);
-                    } else {
-                        $response = call_user_func($handler, $request);
-                    }
+                } elseif ($method->getParameters()[0]?->getType()?->getName() === 'array' || $method->getParameters()[0]?->getType() === null) {
+                    $response = call_user_func($handler, $request->params);
+                } else {
+                    $response = call_user_func($handler, $request);
+                }
 
-                    if ($response instanceof Response) {
-                        $responseData = $response->getResponseData();
-                        if (is_array($responseData) && count(static::$pendingNotifications) > 0) {
-                            $responseData['notifications'] = [];
-                            foreach (static::$pendingNotifications as $toast) {
-                                $responseData['notifications'][] = $toast->toArray();
-                            }
+                if ($response instanceof Response) {
+                    $responseData = $response->getResponseData();
+                    if (is_array($responseData) && count(static::$pendingNotifications) > 0) {
+                        $responseData['notifications'] = [];
+                        foreach (static::$pendingNotifications as $toast) {
+                            $responseData['notifications'][] = $toast->toArray();
                         }
                         $response->setResponseData($responseData);
-                        return $response;
                     }
-//                } catch (\Exception $e) {
-//
-//                }
-//
-//                $response = call_user_func($handler, $request->params);
-//                if ($response instanceof Response) return $response;
+                    return $response;
+                }
                 break;
         }
 
