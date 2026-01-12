@@ -75,7 +75,7 @@ class Request
             $instance = $schema->getItemInstance((int)$this->params[$extractIdKey]);
 
             $this->extractedTargetInstanceIdFromParamsKey = $extractIdKey;
-            $this->targetInstance = $instance;
+            $targetInstance = $instance;
             if (!$instance) {
                 $this->hasValidAccess = false;
                 return;
@@ -83,11 +83,18 @@ class Request
         } elseif ($this->targetComponent && $route->isAnonymousTarget()) {
             $schema = Schema::get($this->targetComponent);
             $instance = $schema->getItemInstance();
-            $this->targetInstance = $instance;
+            $targetInstance = $instance;
 
         } else {
-            $this->targetInstance = null;
+            $targetInstance = null;
         }
+
+        $targetIsLoggedUser = $route->getTargetIsLoggedUser();
+
+        if ($targetIsLoggedUser) {
+            $targetInstance = $this->loggedUser;
+        }
+        $this->targetInstance = $targetInstance;
 
         if ($this->targetComponent){
             if ($this->accessLevel === AccessLevel::OnlyAdminUsers) {
