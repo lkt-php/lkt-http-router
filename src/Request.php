@@ -67,55 +67,56 @@ class Request
         $this->targetAccessPolicy = $route->getTargetAccessPolicy();
         $this->attemptToGrantPerms = $route->getGrantedPermsAttempt();
 
-        // Access Level: Component Instance
-        $extractIdKey = $route->getIdColumnValueParamsExtractionKey();
-
-        if ($this->targetComponent && $extractIdKey) {
-            $schema = Schema::get($this->targetComponent);
-            $instance = $schema->getItemInstance((int)$this->params[$extractIdKey]);
-
-            $this->extractedTargetInstanceIdFromParamsKey = $extractIdKey;
-            $targetInstance = $instance;
-            if (!$instance) {
-                $this->hasValidAccess = false;
-                return;
-            }
-        } elseif ($this->targetComponent && $route->isAnonymousTarget()) {
-            $schema = Schema::get($this->targetComponent);
-            $instance = $schema->getItemInstance();
-            $targetInstance = $instance;
-
-        } else {
-            $targetInstance = null;
-        }
-
         $targetIsLoggedUser = $route->getTargetIsLoggedUser();
 
         if ($targetIsLoggedUser) {
-            $targetInstance = $this->loggedUser;
-        }
-        $this->targetInstance = $targetInstance;
+            $this->targetInstance = $this->loggedUser;
+        } else {
 
-        if ($this->targetComponent){
-            if ($this->accessLevel === AccessLevel::OnlyAdminUsers) {
-                $isValid = true;
-                foreach ($route->getRequiredPermissions() as $permission) {
-                    $isValid = $isValid && $this->loggedUser->hasAdminPermission($this->targetComponent, $permission, $this->targetInstance);
-                }
-                if (!$isValid) {
-                    $this->hasValidAccess = $isValid;
+            // Access Level: Component Instance
+            $extractIdKey = $route->getIdColumnValueParamsExtractionKey();
+
+            if ($this->targetComponent && $extractIdKey) {
+                $schema = Schema::get($this->targetComponent);
+                $instance = $schema->getItemInstance((int)$this->params[$extractIdKey]);
+
+                $this->extractedTargetInstanceIdFromParamsKey = $extractIdKey;
+                $targetInstance = $instance;
+                if (!$instance) {
+                    $this->hasValidAccess = false;
                     return;
                 }
+            } elseif ($this->targetComponent && $route->isAnonymousTarget()) {
+                $schema = Schema::get($this->targetComponent);
+                $instance = $schema->getItemInstance();
+                $targetInstance = $instance;
 
-            } else if ($this->accessLevel === AccessLevel::OnlyLoggedUsers) {
-                $isValid = true;
-                foreach ($route->getRequiredPermissions() as $permission) {
-                    $isValid = $isValid && $this->loggedUser->hasAppPermission($this->targetComponent, $permission, $this->targetInstance);
-                }
+            } else {
+                $targetInstance = null;
+            }
+            $this->targetInstance = $targetInstance;
 
-                if (!$isValid) {
-                    $this->hasValidAccess = $isValid;
-                    return;
+            if ($this->targetComponent){
+                if ($this->accessLevel === AccessLevel::OnlyAdminUsers) {
+                    $isValid = true;
+                    foreach ($route->getRequiredPermissions() as $permission) {
+                        $isValid = $isValid && $this->loggedUser->hasAdminPermission($this->targetComponent, $permission, $this->targetInstance);
+                    }
+                    if (!$isValid) {
+                        $this->hasValidAccess = $isValid;
+                        return;
+                    }
+
+                } else if ($this->accessLevel === AccessLevel::OnlyLoggedUsers) {
+                    $isValid = true;
+                    foreach ($route->getRequiredPermissions() as $permission) {
+                        $isValid = $isValid && $this->loggedUser->hasAppPermission($this->targetComponent, $permission, $this->targetInstance);
+                    }
+
+                    if (!$isValid) {
+                        $this->hasValidAccess = $isValid;
+                        return;
+                    }
                 }
             }
         }
