@@ -5,6 +5,7 @@ namespace Lkt\Http\Routes;
 use Lkt\Http\Enums\AccessLevel;
 use Lkt\Http\Enums\RouteMethod;
 use Lkt\Http\Enums\SiteMapChangeFrequency;
+use Lkt\Http\HttpEventHandler;
 use Lkt\Http\Router;
 use Lkt\Http\SiteMap\SiteMapConfig;
 
@@ -34,10 +35,26 @@ abstract class AbstractRoute
 
     protected array $requiredPermissions = [];
 
+    protected array $httpEventHandlers = [];
+
     public function __construct(string $route, callable $handler)
     {
         $this->route = $route;
         $this->handler = $handler;
+    }
+
+    public function addHttpEventHandler(HttpEventHandler $eventHandler): static
+    {
+        $this->httpEventHandlers[] = $eventHandler;
+        return $this;
+    }
+
+    /**
+     * @return HttpEventHandler[]
+     */
+    public function getHttpEventHandlers(): array
+    {
+        return $this->httpEventHandlers;
     }
 
     public function getMethod(): string

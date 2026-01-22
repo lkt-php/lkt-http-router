@@ -5,6 +5,8 @@ namespace Lkt\Http;
 use Lkt\Factory\Schemas\Enums\AccessPolicyEndOfLife;
 use Lkt\Factory\Schemas\Schema;
 use Lkt\Http\Enums\AccessLevel;
+use Lkt\Http\Enums\HttpEvent;
+use Lkt\Users\Enums\RoleCapability;
 use Lkt\WebItems\Enums\WebItemAction;
 
 class BasicHttpHandler
@@ -21,7 +23,10 @@ class BasicHttpHandler
         $accessPolicy = $request->targetAccessPolicy;
         if ($request->targetWebItem) {
             if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
@@ -29,7 +34,10 @@ class BasicHttpHandler
                 }
             }
             else {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
@@ -65,7 +73,10 @@ class BasicHttpHandler
         $accessPolicy = $request->targetAccessPolicy;
         if ($request->targetWebItem) {
             if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
@@ -73,7 +84,10 @@ class BasicHttpHandler
                 }
             }
             else {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
@@ -87,6 +101,8 @@ class BasicHttpHandler
         }
         $request->targetInstance->autoCreate($request->params);
 
+        if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::SuccessCreate, $request->httpEventHandlers, []);
+
         return Response::ok(['id' => $request->targetInstance->getId()]);
     }
 
@@ -95,7 +111,10 @@ class BasicHttpHandler
         $accessPolicy = $request->targetAccessPolicy;
         if ($request->targetWebItem) {
             if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
@@ -103,7 +122,10 @@ class BasicHttpHandler
                 }
             }
             else {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
@@ -117,12 +139,31 @@ class BasicHttpHandler
         }
         $request->targetInstance->autoUpdate($request->params);
 
+        if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::SuccessUpdate, $request->httpEventHandlers, []);
+
         return Response::ok(['id' => $request->targetInstance->getId()]);
     }
 
     public static function rm(Request $request): Response
     {
+        if ($request->targetWebItem) {
+            if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+                if (!in_array(WebItemAction::Drop, $request->targetWebItem->getEnabledAdminActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
+            }
+            else {
+                if (!in_array(WebItemAction::Drop, $request->targetWebItem->getEnabledAppActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
+            }
+        }
+
         $request->targetInstance->delete();
+
+        if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::SuccessDrop, $request->httpEventHandlers, []);
         return Response::ok();
     }
 
@@ -131,18 +172,24 @@ class BasicHttpHandler
         $accessPolicy = $request->targetAccessPolicy;
         if ($request->targetWebItem) {
             if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::Page, $request->targetWebItem->getEnabledAdminActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
-                    $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
+                    $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::Page);
                     if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
                 }
             }
             else {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::Page, $request->targetWebItem->getEnabledAppActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
-                    $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
+                    $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::Page);
                     if ($defaultAccessPolicy) $accessPolicy = $defaultAccessPolicy;
                 }
             }
@@ -153,6 +200,19 @@ class BasicHttpHandler
         $schema = Schema::get($request->targetComponent);
         $helperInstance = $schema->getItemInstance();
         $builder = $helperInstance::getQueryCaller();
+
+        if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+            $capability = $request->loggedUser->getAdminCapability($request->targetComponent, 'ls');
+        } else {
+            $capability = $request->loggedUser->getAppCapability($request->targetComponent, 'ls');
+        }
+
+        if ($capability && $capability === RoleCapability::Owned) {
+            $ownershipField = $schema->getOwnershipField();
+            if ($ownershipField) {
+                $builder->andIntegerEqual($ownershipField->getColumn(), $request->loggedUser->getId());
+            }
+        }
         $rawResults = $helperInstance::getPage($request->page, $builder);
         $results = [];
         foreach ($rawResults as $rawResult) {
@@ -174,7 +234,7 @@ class BasicHttpHandler
 
         return Response::ok([
             'results' => $results,
-            'maxPage' => $request->targetInstance::getAmountOfPages($builder),
+            'maxPage' => $helperInstance::getAmountOfPages($builder),
             'perm' => $perm
         ]);
     }
@@ -184,7 +244,10 @@ class BasicHttpHandler
         $accessPolicy = $request->targetAccessPolicy;
         if ($request->targetWebItem) {
             if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAdminActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAdminActionAccessPolicy(WebItemAction::List);
@@ -192,7 +255,10 @@ class BasicHttpHandler
                 }
             }
             else {
-                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) return Response::badRequest();
+                if (!in_array(WebItemAction::List, $request->targetWebItem->getEnabledAppActions())) {
+                    if ($request->httpEventHandlers) HttpEventHandler::triggerEvent(HttpEvent::NotEnoughPerms, $request->httpEventHandlers, []);
+                    return Response::badRequest();
+                }
 
                 if (!$accessPolicy) {
                     $defaultAccessPolicy = $request->targetWebItem->getAppActionAccessPolicy(WebItemAction::List);
@@ -207,6 +273,19 @@ class BasicHttpHandler
         $schema = Schema::get($request->targetComponent);
         $helperInstance = $schema->getItemInstance();
         $builder = $helperInstance::getQueryCaller();
+
+        if ($request->accessLevel === AccessLevel::OnlyAdminUsers) {
+            $capability = $request->loggedUser->getAdminCapability($request->targetComponent, 'ls');
+        } else {
+            $capability = $request->loggedUser->getAppCapability($request->targetComponent, 'ls');
+        }
+
+        if ($capability && $capability === RoleCapability::Owned) {
+            $ownershipField = $schema->getOwnershipField();
+            if ($ownershipField) {
+                $builder->andIntegerEqual($ownershipField->getColumn(), $request->loggedUser->getId());
+            }
+        }
         $rawResults = $helperInstance::getMany($builder);
         $results = [];
         foreach ($rawResults as $rawResult) {

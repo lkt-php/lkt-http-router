@@ -20,6 +20,9 @@ class Request
     readonly public AbstractInstance|null $targetInstance;
     readonly public SessionUserInterface|null $loggedUser;
 
+    /** @var HttpEventHandler[] */
+    readonly public array $httpEventHandlers;
+
     readonly public bool $hasValidAccess;
     readonly public int $page;
 
@@ -48,6 +51,8 @@ class Request
             $this->hasValidAccess = false;
             return;
         }
+
+        $this->httpEventHandlers = $route->getHttpEventHandlers();
 
         // Page
         $extractPageKey = $route->getPageValueParamsExtractionKey();

@@ -7,16 +7,18 @@ final class Networking
     protected static ?Networking $instance = null;
 
     protected string $remoteAddress = '';
-    protected string $httpProtocol = '';
+    readonly public string $httpOrigin;
+    readonly public int $httpOriginPort;
+    readonly public string $httpProtocol;
     protected string $httpProtocolVersion = '';
-    protected string $httpHost = '';
-    protected string $requestUri = '';
+    readonly public string $httpHost;
+    readonly public string $requestUri;
     protected string $requestMethod = '';
     protected string $cleanedRequestUri = '';
     protected string $serverName = '';
     protected string $publicUrl = '';
 
-    public function __construct()
+    private function __construct()
     {
         if (php_sapi_name() !== 'cli') {
             $remoteAddr = $_SERVER['REMOTE_ADDR'];
@@ -26,6 +28,12 @@ final class Networking
                 $remoteAddr = $_SERVER['HTTP_X_FORWARDED_FOR'];
             }
             $this->remoteAddress = $remoteAddr;
+
+            $httpOrigin = trim($_SERVER['HTTP_ORIGIN']);
+            $this->httpOrigin = $httpOrigin;
+
+            $port = (int)explode(':', $httpOrigin)[2];
+            $this->httpOriginPort = $port;
 
             $httpXForwardedProto = '';
             if (array_key_exists('HTTP_X_FORWARDED_PROTO', $_SERVER) && isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
@@ -49,10 +57,17 @@ final class Networking
             $this->serverName = $_SERVER['SERVER_NAME'];
 
             $this->requestMethod = strtolower($_SERVER['REQUEST_METHOD']);
+
+        } else {
+            $this->httpOrigin = '';
+            $this->httpOriginPort = 0;
+            $this->httpHost = '';
+            $this->requestUri = '';
+            $this->httpProtocol = '';
         }
     }
 
-    private static function getInstance(): self
+    public static function getInstance(): self
     {
         if (!self::$instance instanceof self) self::$instance = new self();
         return self::$instance;
